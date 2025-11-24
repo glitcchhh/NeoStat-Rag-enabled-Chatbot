@@ -5,7 +5,8 @@ import os
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") # e.g. for text-gen / embeddings
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
-# Add other provider keys you may use (GROQ_API_KEY, GEMINI_API_KEY) as env vars
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 
 # App settings
