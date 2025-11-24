@@ -1,3 +1,4 @@
+#app.py
 import streamlit as st
 import os
 
@@ -101,13 +102,19 @@ with col1:
             if len(retrieved_docs) == 0:
                 search_output = safe_call(web_search, user_input)
                 if search_output:
-                    web_data = "\n\n[WEB SEARCH RESULTS]\n" + search_output
+                    # Convert list to string if needed
+                    if isinstance(search_output, list):
+                        search_output = "\n\n".join([str(item) for item in search_output])
+                    web_data = "\n\n[WEB SEARCH RESULTS]\n" + str(search_output)
 
             # If RAG exists, optionally add supplementary context
             else:
                 search_output = safe_call(web_search, user_input)
                 if search_output:
-                    web_data = "\n\n[SUPPLEMENTARY SEARCH]\n" + search_output
+                    # Convert list to string if needed
+                    if isinstance(search_output, list):
+                        search_output = "\n\n".join([str(item) for item in search_output])
+                    web_data = "\n\n[SUPPLEMENTARY SEARCH]\n" + str(search_output)
 
         # LLM Final Prompt
         final_prompt = f"""

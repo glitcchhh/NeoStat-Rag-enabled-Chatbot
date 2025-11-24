@@ -1,43 +1,72 @@
 # models/llm.py
-# Wraps LLM providers. Keep calls here. This example uses OpenAI's chat completions.
+# Uses Perplexity AI API for chat completions.
+
 import os
+import requests
+import json
 from config.config import LLM_PROVIDER
 
 
-# Basic OpenAI example
-try:
-    import openai
-except Exception:
-    openai = None
+PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 
 
-
-
-def generate_response(prompt: str, system_prompt: str = None, provider: str = None, mode: str = "detailed", max_tokens: int = 512):
-    """Generate a response using configured provider. mode in ['concise','detailed']
-    Keep it generic so you can add more providers.
+def generate_response(
+    prompt: str,
+    system_prompt: str = None,
+    provider: str = None,
+    mode: str = "detailed",
+    max_tokens: int = 512
+):
     """
+    Generate a response using Perplexity AI.
+    mode: 'concise' or 'detailed'
+    """
+
     provider = provider or LLM_PROVIDER
     system_prompt = system_prompt or "You are a helpful assistant."
+
+    if provider != "perplexity":
+        return f"[Simulated {provider} response for mode={mode}]"
+
+    api_key = os.getenv("PERPLEXITY_API_KEY")
+    if not api_key:
+        return "ERROR: PERPLEXITY_API_KEY not found in environment variables."
+
+    # Mode adjustments
+    if mode == "concise":
+        max_tokens = min(200, max_tokens)
+        temperature = 0.2
+    else:
+        temperature = 0.7
+
+    payload = {
+        "model": "sonar-pro",   # Reliable & cost-effective
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": max_tokens,
+        "temperature": temperature
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+
     try:
-        if provider == "openai":
-            if openai is None:
-                raise RuntimeError("openai package not installed")
-            # Uses ChatCompletions (gpt-3.5/4 family) as an example
-            openai.api_key = os.getenv("OPENAI_API_KEY")
-            messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}]
-            # Adjust temperature and max tokens per mode
-            if mode == "concise":
-                max_tokens = min(200, max_tokens)
-                temperature = 0.2
-            else:
-                temperature = 0.7
-            resp = openai.ChatCompletion.create(model="gpt-4o-mini" if False else "gpt-3.5-turbo", messages=messages, max_tokens=max_tokens, temperature=temperature)
-            text = resp["choices"][0]["message"]["content"].strip()
-            return text
-        else:
-            # Placeholder for other providers (Groq/Gemini)
-            return f"[Simulated {provider} response for mode={mode}] -- Prompt length {len(prompt)}"
+        response = requests.post(
+            PERPLEXITY_API_URL,
+            headers=headers,
+            data=json.dumps(payload)
+        )
+
+        if response.status_code != 200:
+            return f"Perplexity API Error {response.status_code}: {response.text}"
+
+        data = response.json()
+        return data["choices"][0]["message"]["content"].strip()
+
     except Exception as e:
-        print("LLM generation failed:", e)
-        return "Sorry — I couldn't get an LLM response right now."
+        print("Perplexity generation failed:", e)
+        return "Sorry — I couldn't get a response from Perplexity right now."
