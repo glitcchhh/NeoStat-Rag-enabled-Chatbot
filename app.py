@@ -44,11 +44,11 @@ def google_speech_to_text(audio_bytes):
 # ---------------- STREAMLIT CONFIG ---------------- #
 
 st.set_page_config(
-    page_title="NeoStats Chatbot — RAG + Voice + Web Search",
+    page_title="NeoStats Chatbot — RAG + Voice Search + Web Search",
     layout="wide"
 )
 
-st.title("🎤 NeoStats — RAG-enabled Chatbot with Voice Input")
+st.title("NeoStats — RAG-enabled Chatbot with Voice Input")
 
 
 # ---------------- SIDEBAR: DOCUMENT UPLOAD ---------------- #

@@ -7,3 +7,7 @@ pandas
 sentence-transformers
 python-dotenv
 pydantic
+google-cloud-speech==2.26.0
+google-auth==2.35.0
+google-auth-oauthlib
+google-api-core
