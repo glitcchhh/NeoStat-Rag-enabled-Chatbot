@@ -5,6 +5,8 @@ from streamlit_mic_recorder import mic_recorder
 import base64
 import requests
 
+from google.cloud import speech  # GOOGLE STT
+
 from utils.embedding_utils import chunk_text, build_vector_store, retrieve
 from utils.web_search import web_search
 from utils.helpers import safe_call
@@ -12,31 +14,35 @@ from models.llm import generate_response
 from config.config import VECTOR_STORE_PATH
 
 
-# Perplexity Voice-to-Text
-PPLX_API_KEY = os.getenv("PPLX_API_KEY")
-PERPLEXITY_STT_URL = "https://api.perplexity.ai/audio/transcriptions"
 
-def perplexity_speech_to_text(audio_bytes):
+# ---------------- GOOGLE SPEECH-TO-TEXT ---------------- #
+
+def google_speech_to_text(audio_bytes):
     """
-    Convert recorded audio bytes into text using Perplexity Sonar-Pro STT.
+    Convert recorded audio bytes into text using Google Speech-to-Text.
     """
-    files = {
-        "file": ("audio.wav", audio_bytes, "audio/wav")
-    }
-    data = {
-        "model": "sonar-pro",
-    }
-    headers = {
-        "Authorization": f"Bearer {PPLX_API_KEY}"
-    }
+    client = speech.SpeechClient()
 
-    response = requests.post(PERPLEXITY_STT_URL, files=files, data=data, headers=headers)
-    response.raise_for_status()
+    audio = speech.RecognitionAudio(content=audio_bytes)
 
-    return response.json().get("text", "")
+    config = speech.RecognitionConfig(
+        language_code="en-US",
+        enable_automatic_punctuation=True,
+        audio_channel_count=1
+    )
+
+    response = client.recognize(config=config, audio=audio)
+
+    if len(response.results) == 0:
+        return ""
+
+    transcript = response.results[0].alternatives[0].transcript
+    return transcript
 
 
-# STREAMLIT PAGE CONFIG
+
+# ---------------- STREAMLIT CONFIG ---------------- #
+
 st.set_page_config(
     page_title="NeoStats Chatbot — RAG + Voice + Web Search",
     layout="wide"
@@ -45,14 +51,15 @@ st.set_page_config(
 st.title("🎤 NeoStats — RAG-enabled Chatbot with Voice Input")
 
 
-# SIDEBAR: UPLOAD DOCUMENTS
+# ---------------- SIDEBAR: DOCUMENT UPLOAD ---------------- #
+
 st.sidebar.title("Settings")
 st.sidebar.markdown("Upload documents, enable RAG, Web Search, and Voice-to-Text.")
 
 st.sidebar.header("1) Upload Documents")
 
 uploaded_files = st.sidebar.file_uploader(
-    "Upload .txt / .md / text-based PDF files",
+    "Upload .txt / .md / PDF files",
     type=["txt", "md", "pdf"],
     accept_multiple_files=True
 )
@@ -83,7 +90,7 @@ if st.sidebar.button("Build / Refresh Vector Store"):
         st.sidebar.warning("Upload files first!")
 
 
-# Sidebar Options
+# Sidebar options
 st.sidebar.header("Options")
 
 use_web_search = st.sidebar.checkbox("Enable Live Web Search", value=True)
@@ -95,7 +102,8 @@ mode = st.sidebar.radio(
 )
 
 
-# Conversation State
+# ---------------- SESSION STATE ---------------- #
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -103,33 +111,33 @@ if "voice_text" not in st.session_state:
     st.session_state.voice_text = ""
 
 
-# VOICE INPUT
+# ---------------- VOICE INPUT ---------------- #
+
 st.header("🎤 Voice Input (Speak your question)")
 
-audio_recording = mic_recorder(
-    start_prompt="🎙️ Start Recording",
-    stop_prompt="⏹️ Stop Recording",
-    key="voice_recorder"
+audio_dict = mic_recorder(
+    start_prompt="🎤 Start Recording",
+    stop_prompt="⏹ Stop Recording"
 )
 
 voice_question = ""
 
-if audio_recording is not None:
-    audio_bytes = audio_recording["audio"]
-    st.audio(audio_bytes, format="audio/wav")
+if audio_dict and "bytes" in audio_dict:
+    audio_bytes = audio_dict["bytes"]
 
-    st.write("⏳ Converting your speech to text using Perplexity Sonar-Pro...")
+    st.audio(audio_bytes, format="audio/wav")
+    st.write("⏳ Converting speech to text using Google Speech-to-Text...")
 
     try:
-        voice_question = perplexity_speech_to_text(audio_bytes)
+        voice_question = google_speech_to_text(audio_bytes)
         st.session_state.voice_text = voice_question
         st.success(f"**You said:** {voice_question}")
-
     except Exception as e:
-        st.error(f"Voice-to-text failed: {e}")
+        st.error(f"Google STT failed: {e}")
 
 
-# TEXT INPUT
+# ---------------- TEXT INPUT ---------------- #
+
 st.header("💬 Ask a Question")
 
 user_input = st.text_area(
@@ -139,7 +147,8 @@ user_input = st.text_area(
 )
 
 
-# PROCESS QUERY
+# ---------------- PROCESSING QUERY ---------------- #
+
 if st.button("Send") and user_input.strip():
 
     # RAG Retrieval
@@ -157,7 +166,7 @@ if st.button("Send") and user_input.strip():
                 search_output = "\n\n".join([str(item) for item in search_output])
             web_data = "\n\n[WEB SEARCH RESULTS]\n" + str(search_output)
 
-    # LLM prompt
+    # LLM Prompt for Perplexity
     final_prompt = f"""
 You are an AI assistant with RAG + Web Search.
 
@@ -172,10 +181,10 @@ Web Search Context:
 
 Response Mode: {mode}
 
-Provide the best possible answer.
+Give the best possible answer.
 """
 
-    # Generate answer
+    # Generate response with Perplexity
     answer = safe_call(generate_response, final_prompt, mode)
 
     st.session_state.history.append({"user": user_input, "bot": answer})
@@ -184,8 +193,8 @@ Provide the best possible answer.
     st.write(answer)
 
 
+# ---------------- SIDEBAR HISTORY ---------------- #
 
-# SIDEBAR CHAT HISTORY
 st.sidebar.header("Chat History")
 for msg in reversed(st.session_state.history):
     st.sidebar.markdown(f"**You:** {msg['user']}")
