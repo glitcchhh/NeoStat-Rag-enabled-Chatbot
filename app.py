@@ -14,8 +14,8 @@ from models.llm import generate_response
 from config.config import VECTOR_STORE_PATH
 
 
-PPLX_API_KEY = st.secrets["PPLX_API_KEY"]
-
+#PPLX_API_KEY = st.secrets["PPLX_API_KEY"]
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "neostat-chatbot-1590ff5da481.json"
 
 # ---------------- GOOGLE SPEECH-TO-TEXT ---------------- #
 

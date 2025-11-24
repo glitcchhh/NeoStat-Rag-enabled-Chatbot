@@ -1,6 +1,4 @@
 # models/llm.py
-# Uses Perplexity AI API for chat completions.
-
 import requests
 import json
 import streamlit as st
@@ -23,7 +21,6 @@ def generate_response(
     provider = provider or LLM_PROVIDER
     system_prompt = system_prompt or "You are a helpful assistant."
 
-    # If provider is not Perplexity, simulate a response
     if provider != "perplexity":
         return f"[Simulated {provider} response for mode={mode}]"
 
@@ -32,7 +29,6 @@ def generate_response(
     if not PPLX_API_KEY:
         return "ERROR: PERPLEXITY_API_KEY not found in Streamlit secrets."
 
-    # Mode adjustments
     if mode == "concise":
         max_tokens = min(200, max_tokens)
         temperature = 0.2
@@ -58,17 +54,18 @@ def generate_response(
         response = requests.post(
             PERPLEXITY_API_URL,
             headers=headers,
-            data=json.dumps(payload)
+            json=payload  # use json=payload instead of data=json.dumps(payload)
         )
+
+        if response.status_code == 401:
+            return "ERROR: Invalid Perplexity API key (401 Unauthorized)."
 
         if response.status_code != 200:
             return f"Perplexity API Error {response.status_code}: {response.text}"
 
         data = response.json()
-
-        # Safely extract content
         choices = data.get("choices")
-        if not choices or len(choices) == 0:
+        if not choices:
             return "Perplexity API returned no response."
 
         message = choices[0].get("message", {}).get("content", "")
