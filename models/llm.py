@@ -1,14 +1,12 @@
 # models/llm.py
 # Uses Perplexity AI API for chat completions.
 
-import os
 import requests
 import json
+import streamlit as st
 from config.config import LLM_PROVIDER
 
-
 PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
-
 
 def generate_response(
     prompt: str,
@@ -25,12 +23,14 @@ def generate_response(
     provider = provider or LLM_PROVIDER
     system_prompt = system_prompt or "You are a helpful assistant."
 
+    # If provider is not Perplexity, simulate a response
     if provider != "perplexity":
         return f"[Simulated {provider} response for mode={mode}]"
 
-    api_key = os.getenv("PERPLEXITY_API_KEY")
-    if not api_key:
-        return "ERROR: PERPLEXITY_API_KEY not found in environment variables."
+    # Get API key from Streamlit secrets
+    PPLX_API_KEY = st.secrets.get("PPLX_API_KEY")
+    if not PPLX_API_KEY:
+        return "ERROR: PERPLEXITY_API_KEY not found in Streamlit secrets."
 
     # Mode adjustments
     if mode == "concise":
@@ -40,7 +40,7 @@ def generate_response(
         temperature = 0.7
 
     payload = {
-        "model": "sonar-pro",   
+        "model": "sonar-pro",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -51,7 +51,7 @@ def generate_response(
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
+        "Authorization": f"Bearer {PPLX_API_KEY}"
     }
 
     try:
@@ -65,7 +65,14 @@ def generate_response(
             return f"Perplexity API Error {response.status_code}: {response.text}"
 
         data = response.json()
-        return data["choices"][0]["message"]["content"].strip()
+
+        # Safely extract content
+        choices = data.get("choices")
+        if not choices or len(choices) == 0:
+            return "Perplexity API returned no response."
+
+        message = choices[0].get("message", {}).get("content", "")
+        return message.strip() if message else "Perplexity API returned empty response."
 
     except Exception as e:
         print("Perplexity generation failed:", e)

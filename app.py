@@ -14,6 +14,8 @@ from models.llm import generate_response
 from config.config import VECTOR_STORE_PATH
 
 
+PPLX_API_KEY = st.secrets["PPLX_API_KEY"]
+
 
 # ---------------- GOOGLE SPEECH-TO-TEXT ---------------- #
 
@@ -185,7 +187,7 @@ Give the best possible answer.
 """
 
     # Generate response with Perplexity
-    answer = safe_call(generate_response, final_prompt, mode)
+    answer = safe_call(generate_response, final_prompt, mode=mode)
 
     st.session_state.history.append({"user": user_input, "bot": answer})
 
