@@ -1,6 +1,4 @@
-# utils/embeddings_utils.py
-# Chunking, vector store, retrieval using cosine similarity from sentence-transformers.
-import os
+# utils/embeddings_utils.p
 import pickle
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -31,9 +29,7 @@ def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100):
 
 
 def build_vector_store(docs: list, meta: list = None, path: str = VECTOR_STORE_PATH):
-    """docs: list of strings. meta: optional list of metadata dicts parallel to docs.
-    Stores a simple dictionary with keys: 'embeddings', 'docs', 'meta'
-    """
+   
     try:
         if meta is None:
             meta = [None] * len(docs)

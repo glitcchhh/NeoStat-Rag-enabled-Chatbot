@@ -40,7 +40,7 @@ def generate_response(
         temperature = 0.7
 
     payload = {
-        "model": "sonar-pro",   # Reliable & cost-effective
+        "model": "sonar-pro",   
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}

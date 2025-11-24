@@ -1,9 +1,9 @@
 streamlit
-openai
-python-dotenv
-beautifulsoup4
+streamlit-mic-recorder
 requests
-chromadb
-tiktoken
+scikit-learn
+numpy
+pandas
 sentence-transformers
-
+python-dotenv
+pydantic

@@ -1,5 +1,5 @@
 # models/embeddings.py
-# Embedding model wrapper. Keep model definitions here and call from app.py.
+
 from sentence_transformers import SentenceTransformer
 import os
 from config.config import EMBEDDING_MODEL_NAME
@@ -24,4 +24,3 @@ class EmbeddingModel:
                 raise
 
 
-# Optionally add provider-specific embedding classes (OpenAI) if you want to use cloud embeddings.

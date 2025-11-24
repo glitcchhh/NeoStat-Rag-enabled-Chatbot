@@ -11,9 +11,8 @@ SERPAPI_URL = "https://serpapi.com/search.json"
 
 
 def web_search(query: str, num_results: int = 5):
-    """Perform live web search using SerpAPI (requires SERPAPI_KEY environment variable).
-    Returns a simple list of dicts: title, snippet, link.
-    """
+    #Perform live web search using SerpAPI 
+    
     try:
         if not SERPAPI_KEY:
             raise EnvironmentError("SERPAPI_KEY not set in environment")
